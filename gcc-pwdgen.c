@@ -1,5 +1,7 @@
 /*
  * gcc-pwdgen.c
+ * 
+ * Copyright (C) 2012  MT
  *
  * A  random password generator to generate passwords made up from triplets 
  * comprising of a constant, a vowel, and a constant.
@@ -22,6 +24,11 @@
  *
  * 23 Feb 16   0.1   - Initial version - MT 
  * 16 Mar 16   0.2   - Added some numbers into the character strings - MT 
+ * 17 Sep 23   0.3   - Updated variable names - MT
+ *                   - Valid characters defined as two sets of constants to
+ *                     allow more complex passwords with special characters
+ *                     and  both upper and lower case letters to be created
+ *                     if needed - MT
  *
  */
 
@@ -34,46 +41,64 @@
 #define LENGTH 11   /* Length of the password. */
 #define SIZE 3      /* Size of letter group, use an odd number greater than 1. */
 
+#if defined(COMPLEX)
+#define CONSONANTS "bcdfghklmnpqrstvwyBCDFGKLMNPQRSTVWY"
+#define VOWELS "a4e3io0uA4E3I1O0U"
+#define DIGITS "123456789"
+#define SPECIAL "!\"#$%&'()*+.:;<>?@[/]^_{|}" 
+#else
+#define CONSONANTS "bcdfghklmnpqrstvwy"
+#define VOWELS "aeiou"
+#define DIGITS "123456789"
+#define SPECIAL ""  /* No special characters as they are not always allowed */
+#endif
 
-char consonant[] = "bcdfghjk1mnpqr5tvwz"; /* Note - X,Y and zero all left */
-char vowel[] = "a4e3iou";                 /* out intentionally. */
-char digit[] = "123456789";
+char* concat(const char* first, const char* second) /* Concatenate strings */
+{
+   char* result = malloc(strlen(first) + strlen(second) + 1);
+   sprintf(result, "%s%s", first, second);
+   return result;
+}
 
-int main(int argc, char *argv[]) {
-  int  loop; /* Counts passwords generated. */
-  int  i,j; /* Counters for characters in each password. */
-  char passwd[LENGTH + 1]; /* Character array to hold password 'string'. */
+int main()
+{
+   char* s_consonant = CONSONANTS;
+   char* s_vowel = VOWELS;
+   char* s_digit = concat(DIGITS, SPECIAL); /* Explicitly concatenate strings for portability */
 
-  /* Seed random number generator with an unsigned value. */
-  srand((unsigned)(time(NULL)));
+   int i_count; /* Counts passwords generated. */
+   int i_i, i_j; /* Counters for characters in each password. */
+   char s_passwd[LENGTH + 1]; /* Character array to hold password 'string'. */
 
-  for (loop = 0; loop < PASSWORDS; loop++) {
+   srand((unsigned)(time(NULL))); /* Seed random number generator with an unsigned value. */
 
-    /* Generate letter groups. */
-    for (i = 0; i < (LENGTH / SIZE); i++) {
-      for (j = 0; j < SIZE; j++){
-        if ((j % 2) == 0)
-          passwd[i * SIZE +j] = consonant[rand() % strlen(consonant)];
-        else
-          passwd[i * SIZE +j] = vowel[rand() % strlen(vowel)];
+   for (i_count = 0; i_count < PASSWORDS; i_count++)
+   {
+      for (i_i = 0; i_i < (LENGTH / SIZE); i_i++) /* Generate letter groups. */
+      { 
+         for (i_j = 0; i_j < SIZE; i_j++){
+         if ((i_j % 2) == 0)
+            s_passwd[i_i * SIZE +i_j] = s_consonant[rand() % strlen(s_consonant)];
+         else
+            s_passwd[i_i * SIZE +i_j] = s_vowel[rand() % strlen(s_vowel)];
+         }
       }
-    }
 
-    /* Pad out password with digits if required. */
-    i *= SIZE;
-    while (i < LENGTH) {
-      passwd[i] = digit[rand() % strlen(digit)];
-      i++;
-    }
+      i_i *= SIZE;
+      while (i_i < LENGTH) /* Pad out password with digits if required. */
+      { 
+         s_passwd[i_i] = s_digit[rand() % strlen(s_digit)];
+         i_i++;
+      }
 
-    /* Terminate password 'string' with a null character. */
-    passwd[LENGTH] = '\0';
+      s_passwd[LENGTH] = '\0'; /* Terminate password 'string' with a null character. */
 
-    /* Print password (with dashes between groups). */
-    for (i = 0; i < LENGTH; i++) {
-      if (((i % SIZE) == 0) && (i >0)) printf("%c",'-');
-      printf ("%c",passwd[i]);
-    }
-    printf("\n");
-  }
-} 
+      for (i_i = 0; i_i < LENGTH; i_i++) /* Print password in groups of three letters. */
+      { 
+         if (((i_i % SIZE) == 0) && (i_i >0)) printf("%c",'-'); 
+         printf ("%c",s_passwd[i_i]);
+      }
+      printf("\n");
+   }
+   exit(0);
+}
