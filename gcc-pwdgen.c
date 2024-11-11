@@ -21,6 +21,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * 23 Feb 16   0.1   - Initial version - MT 
+ * 16 Mar 16   0.2   - Added some numbers into the character strings - MT 
  *
  */
 
@@ -34,8 +35,8 @@
 #define SIZE 3      /* Size of letter group, use an odd number greater than 1. */
 
 
-char consonant[] = "bcdfghjklmnpqrstvwz"; /* Note - X,Y and zero all left */
-char vowel[] = "aeiou";                   /* out intentionally. */
+char consonant[] = "bcdfghjk1mnpqr5tvwz"; /* Note - X,Y and zero all left */
+char vowel[] = "a4e3iou";                 /* out intentionally. */
 char digit[] = "123456789";
 
 int main(int argc, char *argv[]) {
