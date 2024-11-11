@@ -1,63 +1,77 @@
 #
-#  makefile
+# makefile
 #
-#  Copyright (C) 2012  MT
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#  This  program is free software: you can redistribute it and/or modify it
-#  under  the terms of the GNU General Public License as published  by  the
-#  Free  Software Foundation, either version 3 of the License, or (at  your
-#  option) any later version.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  This  program  is distributed in the hope that it will  be  useful,  but
-#  WITHOUT   ANY   WARRANTY;   without even   the   implied   warranty   of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
-#  Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#  You  should have received a copy of the GNU General Public License along
-#  with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Note - Shell commands must start with a tab character at the beginning
+# of each line NOT spaces..!
 #
-#  Note - Shell commands must start with a tab character at the beginning
-#  of each line NOT spaces..!
+#  30 Jul 23   0.1   - Initial version - MT
+#   4 Aug 23         - Added backup files to tar archive - MT
+#  11 Nov 24   0.2   - Project name derived from current folder - MT
 #
-#  09 Apr 12   0.1   - Initial version derived from gtk-sample-menu - MT
-#  17 Aug 13   0.2   - Added  make  clean  and make verify  to  delete  any 
-#                      object  files and automatically compare  the  output
-#                      against that expected - MT
-#  18 Aug 13         - Now re-compiles sources before verifying output - MT
-#
-PROGRAM = gcc-pwdgen
-SOURCE	= $(PROGRAM).c
-OBJECT	= $(SOURCE:.c=.o)
-OUTPUT	= gcc-pwdgen.t
-FLAGS	= 
-LIBS	= 
-CC	= gcc
-DIFF	= diff
-#
-$(PROGRAM): $(OBJECT) 
-#	@echo '*** Linking $(OBJECT)'
-	@$(CC) $(FLAGS) $(OBJECT) -o $(PROGRAM) $(LIBS)
-#
-$(OBJECT): $(SOURCE)
-#	@echo '*** Compiling $(SOURCE)'
-	@$(CC) $(FLAGS) -c $(SOURCE)
-#
-all: clean $(PROGRAM)
-#
-clean:
-#	Tidy up by simply deleting ALL object files this will force all the
-#	sources to be recompiled.
-#	@echo '*** Deleting object files'
-	@rm -f $(OBJECT)
-#
-verify: clean
-#	Rebuilds source and checks output
-#	@echo '*** Compiling $(SOURCE)'
-	@$(CC) $(FLAGS) -c $(SOURCE)
-#	@echo '*** Linking $(OBJECT)'
-	@$(CC) $(OBJECT) -o $(PROGRAM) $(LIBS)
-#	@echo '*** Cleaning up object files'
-	@rm -f $(OBJECT)
-#	@echo '*** Verifying $(PROGRAM) output against $(OUTPUT)'
-	@./$(PROGRAM) |$(DIFF) -E -B -y --suppress-common-lines - ./$(OUTPUT) ; if [ $$? -eq 0 ] ; then echo "Result:  PASSED" ; fi
 
+PROJECT	= $(strip $(notdir $(abspath $(CURDIR)/.)))
+
+SOURCE	=  $(wildcard *.c) 	# Compile all source files
+INCLUDE	=  $(wildcard *.h) 	# Automatically get all include files
+BACKUP	=  $(wildcard *.c.[0-9])
+OBJECT	=  $(SOURCE:.c=.o)
+PROGRAM	=  $(SOURCE:.c=)
+
+FILES	=  $(SOURCE) $(BACKUP) $(INCLUDE) # LICENSE README.md makefile .gitignore .gitattributes
+LANG	=  LANG_$(shell (echo $$LANG | cut -f 1 -d '_'))
+UNAME	=  $(shell uname)
+
+#LIBS	=
+FLAGS	=  -fcommon -Wall -pedantic -std=gnu99
+#FLAGS	+= -Wno-comment -Wno-deprecated-declarations -Wno-builtin-macro-redefined
+FLAGS	+= -D $(LANG)
+
+# Operating system specific settings
+ifeq ($(UNAME), NetBSD) 	# NetBSD..
+LIBS	+=  -lcompat
+#FLAGS	+=  -I /usr/X11R7/include/ -L /usr/X11R7/lib/ -R /usr/X11R7/lib
+endif
+
+# Compiler specific settings
+ifeq ($(CC), cc)
+LIBS	+=  -no-pie
+#FLAGS	+=  -ansi
+endif
+
+ifdef DEBUG
+FLAGS	+=  -g
+endif
+
+make:$(PROGRAM) $(OBJECT)
+
+all:clean $(PROGRAM) $(OBJECT)
+
+# Compile sources
+%.o : %.c
+	@$(CC) $(FLAGS) -c $<
+
+# Link object file and display execuitable file to indecate progress
+# and validate that it was created
+%: %.o
+	@$(CC) $(FLAGS) -o $@ $<
+	@ls --color $@
+
+clean:
+	@rm -f $(OBJECT) # -v
+	@rm -f $(PROGRAM) # -v
+
+backup: clean
+	@echo "$(PROJECT)-`date +'%Y%m%d%H%M'`.tar.gz"; tar -czpf ..\/$(PROJECT)-`date +'%Y%m%d%H%M'`.tar.gz $(FILES)
